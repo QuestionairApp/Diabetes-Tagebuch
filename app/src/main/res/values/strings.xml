@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Diabetes-Tagebuch</string>
+    <string name="menu_grunddaten">Grunddaten</string>
+    <string name="menu_sync">Synchronisieren</string>
+    <string name="BZWert">Blutzucker</string>
+    <string name="title_activity_grunddaten">Grunddaten</string>
+    <string name="srv_name">server</string>
+    <string name="full_name">fullname</string>
+    <string name="user_name">username</string>
+    <string name="password">password</string>
+    <string name="date_of_birth">geburtstag</string>
+    <string name="werte_array">bzwerte</string>
+    <string name="PREF_KEY_FILE">diabetestagebuch.mkservices.de.diabetes_tagebuch.PREF_FILE</string>
+    <string name="title_activity_bz_liste">BzListe</string>
+</resources>
