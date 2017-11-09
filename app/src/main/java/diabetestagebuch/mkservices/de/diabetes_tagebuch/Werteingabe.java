@@ -22,8 +22,16 @@ import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 
@@ -154,25 +162,64 @@ public class Werteingabe extends AppCompatActivity {
         }
     }
 
-    public class SendBzData extends AsyncTask<String, Integer, String[]> {
+    public class SendBzData extends AsyncTask<String, Integer, String> {
 
         private final String LOG_TAG=SendBzData.class.getSimpleName();
 
         @Override
-        protected String[] doInBackground(String... strings) {
+        protected String doInBackground(String... strings) {
+            String ergebnis="something went wrong";
+            InputStream is=null;
+            String urlStr=strings[4];
+            String retVal=null;
+            try {
+                URL url = new URL(urlStr);
+                HttpURLConnection cc = (HttpURLConnection) url.openConnection();
+                cc.setReadTimeout(5000);
+                cc.setConnectTimeout(5000);
+                cc.setRequestMethod("POST");
+                cc.setDoInput(true);
+                cc.connect();
 
-            Toast.makeText(getApplicationContext(), strings[0]+":"+strings[1]+":"+strings[2]+":"+strings[3]+":"+strings[4], Toast.LENGTH_LONG).show();
-            String[] ergebnisArray=new String[20];
-            for(int i=0;i<ergebnisArray.length; i++){
-                ergebnisArray[i]=strings[0]+"_"+(i+1);
-                if(i%5==4){
-                    publishProgress(i+1, 20);
+                DataOutputStream dos=new DataOutputStream(cc.getOutputStream());
+                StringBuilder params=new StringBuilder();
+                params.append("name=");
+                params.append(strings[0]);
+                params.append("&username=");
+                params.append(strings[1]);
+
+                dos.writeBytes(params.toString());
+                dos.flush();
+                dos.close();
+
+                int response=cc.getResponseCode();
+                if(response==HttpURLConnection.HTTP_OK){
+                    is=cc.getInputStream();
+                    InputStreamReader isr=new InputStreamReader(is);
+                    BufferedReader reader=new BufferedReader(isr);
+                    StringBuilder sb=new StringBuilder();
+
+                    String line=null;
+                    try{
+                        while((line=reader.readLine())!=null){
+                            sb.append(line);
+                        }
+                        ergebnis=sb.toString();
+                    } catch(IOException e){
+
+                    } catch(Exception e){
+
+                    } finally {
+                        try {
+                            is.close();
+                        } catch(IOException e){}
+                    }
                 }
-                try{
-                    Thread.sleep(600);
-                } catch(Exception e){ Log.e(LOG_TAG, "Error ", e);}
+
+            } catch(Exception e){
+                Log.d(LOG_TAG, "Something went wrong");
             }
-            return ergebnisArray;
+            return ergebnis;
         }
 
         @Override
@@ -181,8 +228,8 @@ public class Werteingabe extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(String[] strings){
-            Toast.makeText(getApplicationContext(), "Daten gesendet", Toast.LENGTH_SHORT).show();
+        protected void onPostExecute(String strings){
+            Toast.makeText(getApplicationContext(), strings, Toast.LENGTH_SHORT).show();
         }
     }
 }
