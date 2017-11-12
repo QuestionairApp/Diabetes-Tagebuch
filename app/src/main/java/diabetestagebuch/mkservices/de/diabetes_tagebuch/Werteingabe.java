@@ -7,6 +7,7 @@ import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,8 +29,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -147,8 +151,9 @@ public class Werteingabe extends AppCompatActivity {
                 String gebtag=sharedPref.getString(getString(R.string.date_of_birth), "");
                 String password=sharedPref.getString(getString(R.string.password),"");
                 String srv=sharedPref.getString(getString(R.string.srv_name),"");
+                String bz=sharedPref.getString(getString(R.string.werte_array),"");
                 SendBzData sendBzData=new SendBzData();
-                sendBzData.execute(name, username, gebtag, password, srv);
+                sendBzData.execute(name, username, gebtag, password, srv, bz);
                 return true;
             case R.id.action_bzliste:
                 Intent bzIntent=new Intent(this, BzListe.class);
@@ -172,6 +177,8 @@ public class Werteingabe extends AppCompatActivity {
             InputStream is=null;
             String urlStr=strings[4];
             String retVal=null;
+
+            String pwHash=getSHA256Hash(strings[3]);
             try {
                 URL url = new URL(urlStr);
                 HttpURLConnection cc = (HttpURLConnection) url.openConnection();
@@ -187,6 +194,12 @@ public class Werteingabe extends AppCompatActivity {
                 params.append(strings[0]);
                 params.append("&username=");
                 params.append(strings[1]);
+                params.append("&gebtag=");
+                params.append(strings[2]);
+                params.append("&passwd=");
+                params.append(pwHash);
+                params.append("&werte=");
+                params.append(strings[5]);
 
                 dos.writeBytes(params.toString());
                 dos.flush();
@@ -229,7 +242,32 @@ public class Werteingabe extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String strings){
+            if(strings.equalsIgnoreCase("OK")){
+                SharedPreferences sharedPrefs=getApplicationContext().getSharedPreferences(getString(R.string.PREF_KEY_FILE), Context.MODE_PRIVATE);
+                SharedPreferences.Editor edit=sharedPrefs.edit();
+                edit.putString(getString(R.string.werte_array),"");
+                edit.apply();;
+            }
             Toast.makeText(getApplicationContext(), strings, Toast.LENGTH_SHORT).show();
+        }
+
+        private String getSHA256Hash(String text){
+            String hash=null;
+            MessageDigest md=null;
+
+            try{
+                md=MessageDigest.getInstance("SHA-256");
+                md.update(text.getBytes("UTF-8"));
+                byte[] shaDig=md.digest();
+
+                hash= Base64.encodeToString(shaDig, Base64.DEFAULT);
+
+            } catch(NoSuchAlgorithmException ex){
+                Log.d(LOG_TAG, ex.getMessage());
+            } catch (UnsupportedEncodingException e){
+                Log.d(LOG_TAG, e.getMessage());
+            }
+            return hash;
         }
     }
 }
